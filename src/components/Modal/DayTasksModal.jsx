@@ -94,11 +94,16 @@ function DayTasksModal({
         </div>
 
         <div className="planner-modal-footer">
-          <div className="planner-progress-track">
-            <div
-              className={`planner-progress-bar ${context === 'pessoal' ? 'personal' : 'professional'}`}
-              style={{ width: `${progress}%` }}
-            />
+          <div className="planner-progress-wrap">
+            <div className="planner-progress-track">
+              <div
+                className={`planner-progress-bar ${context === 'pessoal' ? 'personal' : 'professional'}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="planner-progress-label" style={{ left: `${progress}%` }}>
+              {progress}%
+            </span>
           </div>
         </div>
       </div>

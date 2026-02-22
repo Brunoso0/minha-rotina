@@ -1,24 +1,6 @@
-const AUTH_KEY = 'minha-rotina:auth'
-const USERS_KEY = 'minha-rotina:users'
+import { supabase } from '../lib/supabaseClient'
 
 const listeners = new Set()
-
-const defaultUser = {
-  id: 'admin-user',
-  name: 'Admin',
-  email: 'admin@example.com',
-  passwordHash: hashPassword('123456'),
-}
-
-function hashPassword(password) {
-  let hash = 0
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash
-  }
-  return Math.abs(hash).toString(36)
-}
 
 function sanitizeInput(input) {
   if (typeof input !== 'string') return ''
@@ -33,48 +15,38 @@ function validateEmail(email) {
   return re.test(email)
 }
 
-function readJSON(key, fallback) {
-  try {
-    const value = localStorage.getItem(key)
-    return value ? JSON.parse(value) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-function writeJSON(key, value) {
-  localStorage.setItem(key, JSON.stringify(value))
-}
-
-function getUsers() {
-  const existing = readJSON(USERS_KEY, [])
-  if (existing.length > 0) {
-    return existing
-  }
-
-  const seeded = [defaultUser]
-  writeJSON(USERS_KEY, seeded)
-  return seeded
-}
-
-function getSessionUser() {
-  return readJSON(AUTH_KEY, null)
-}
-
 function notify(user) {
   listeners.forEach((listener) => listener(user))
 }
 
-function safeUser(user) {
-  if (!user) return null
-  const { passwordHash: _, ...withoutPassword } = user
-  return withoutPassword
+async function getSessionUser() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return null
+  
+  return {
+    id: session.user.id,
+    email: session.user.email,
+    name: session.user.user_metadata?.name || session.user.email.split('@')[0]
+  }
 }
+
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    const user = {
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.user_metadata?.name || session.user.email.split('@')[0]
+    }
+    notify(user)
+  } else {
+    notify(null)
+  }
+})
 
 export const authService = {
   subscribeAuth(callback) {
     listeners.add(callback)
-    callback(getSessionUser())
+    getSessionUser().then(callback)
     return () => listeners.delete(callback)
   },
 
@@ -88,18 +60,21 @@ export const authService = {
       return { data: null, error: 'Formato de e-mail inválido.' }
     }
 
-    const users = getUsers()
-    const passwordHash = hashPassword(password)
-    const foundUser = users.find(
-      (user) => user.email === sanitizedEmail && user.passwordHash === passwordHash
-    )
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: sanitizedEmail,
+      password
+    })
 
-    if (!foundUser) {
+    if (error) {
       return { data: null, error: 'Credenciais incorretas.' }
     }
 
-    const user = safeUser(foundUser)
-    writeJSON(AUTH_KEY, user)
+    const user = {
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.user_metadata?.name || data.user.email.split('@')[0]
+    }
+
     notify(user)
     return { data: user, error: null }
   },
@@ -120,30 +95,41 @@ export const authService = {
       return { data: null, error: 'Formato de e-mail inválido.' }
     }
 
-    const users = getUsers()
-    const exists = users.some((user) => user.email === sanitizedEmail)
-    if (exists) {
-      return { data: null, error: 'Este e-mail já está em uso.' }
-    }
-
-    const newUser = {
-      id: crypto?.randomUUID?.() ?? String(Date.now()),
-      name: sanitizedName,
+    const { data, error } = await supabase.auth.signUp({
       email: sanitizedEmail,
-      passwordHash: hashPassword(password),
+      password,
+      options: {
+        data: {
+          name: sanitizedName
+        }
+      }
+    })
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        return { data: null, error: 'Este e-mail já está em uso.' }
+      }
+      return { data: null, error: error.message }
     }
 
-    const updatedUsers = [...users, newUser]
-    writeJSON(USERS_KEY, updatedUsers)
+    const user = {
+      id: data.user.id,
+      email: data.user.email,
+      name: sanitizedName
+    }
 
-    const sessionUser = safeUser(newUser)
-    writeJSON(AUTH_KEY, sessionUser)
-    notify(sessionUser)
-    return { data: sessionUser, error: null }
+    notify(user)
+    return { data: user, error: null }
   },
 
   async signOut() {
-    localStorage.removeItem(AUTH_KEY)
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      return { data: null, error: 'Não foi possível sair da conta.' }
+    }
+
     notify(null)
+    return { data: true, error: null }
   },
 }

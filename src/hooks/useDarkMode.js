@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const DARK_MODE_KEY = 'minha-rotina:dark-mode'
+const DARK_MODE_KEY = 'flowroutine:dark-mode'
 
 function getInitialTheme() {
   const saved = localStorage.getItem(DARK_MODE_KEY)

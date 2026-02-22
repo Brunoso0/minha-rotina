@@ -7,6 +7,7 @@ import PerformanceCard from '../../components/Sidebar/PerformanceCard'
 import { goalService } from '../../services/goalService'
 import { taskService } from '../../services/taskService'
 import { toDateKey, toMonthKey } from '../../utils/dateHelpers'
+import { toast } from 'react-toastify'
 
 function DashboardPage({ user, darkMode, onToggleDarkMode, onLogout }) {
   const [context, setContext] = useState('pessoal')
@@ -35,7 +36,7 @@ function DashboardPage({ user, darkMode, onToggleDarkMode, onLogout }) {
   const monthKey = toMonthKey(currentDate)
 
   const filteredGoals = useMemo(
-    () => goals.filter((goal) => goal.monthKey === monthKey && goal.context === context),
+    () => goals.filter((goal) => goal.monthKey === monthKey && (!goal.context || goal.context === context)),
     [goals, monthKey, context],
   )
 
@@ -47,7 +48,7 @@ function DashboardPage({ user, darkMode, onToggleDarkMode, onLogout }) {
   const selectedDayTasks = selectedDay ? tasksForDay(selectedDay) : []
 
   const addTask = async (text) => {
-    await taskService.add({
+    const result = await taskService.add({
       userId: user.id,
       text,
       completed: false,
@@ -55,27 +56,55 @@ function DashboardPage({ user, darkMode, onToggleDarkMode, onLogout }) {
       dateKey: toDateKey(currentDate, selectedDay),
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     })
+
+    if (result.error) {
+      toast.error(`Não foi possível salvar a tarefa: ${result.error}`)
+      return
+    }
+
+    toast.success('Tarefa criada com sucesso!')
     await loadData()
   }
 
   const addGoal = async (text) => {
-    await goalService.add({
+    const result = await goalService.add({
       userId: user.id,
       text,
       completed: false,
       context,
       monthKey,
     })
+
+    if (result.error) {
+      toast.error(`Não foi possível salvar a meta: ${result.error}`)
+      return
+    }
+
+    toast.success('Meta criada com sucesso!')
     await loadData()
   }
 
   const toggleTask = async (id, currentStatus) => {
-    await taskService.updateStatus(id, !currentStatus)
+    const result = await taskService.updateStatus(id, !currentStatus)
+
+    if (result.error) {
+      toast.error(`Não foi possível atualizar a tarefa: ${result.error}`)
+      return
+    }
+
+    toast.success(currentStatus ? 'Tarefa reaberta.' : 'Tarefa concluída!')
     await loadData()
   }
 
   const deleteTask = async (id) => {
-    await taskService.delete(id)
+    const result = await taskService.delete(id)
+
+    if (result.error) {
+      toast.error(`Não foi possível remover a tarefa: ${result.error}`)
+      return
+    }
+
+    toast.info('Tarefa removida.')
     await loadData()
   }
 
@@ -85,7 +114,14 @@ function DashboardPage({ user, darkMode, onToggleDarkMode, onLogout }) {
   }
 
   const deleteGoal = async (id) => {
-    await goalService.delete(id)
+    const result = await goalService.delete(id)
+
+    if (result.error) {
+      toast.error(`Não foi possível remover a meta: ${result.error}`)
+      return
+    }
+
+    toast.info('Meta removida.')
     await loadData()
   }
 
@@ -100,7 +136,7 @@ function DashboardPage({ user, darkMode, onToggleDarkMode, onLogout }) {
               <LayoutDashboard size={24} />
             </div>
             <div>
-              <h1>Planner Pro</h1>
+              <h1>FlowRoutine</h1>
               <p>Área de Trabalho</p>
             </div>
           </div>

@@ -1,4 +1,4 @@
-const TASKS_KEY = 'minha-rotina:tasks'
+import { supabase } from '../lib/supabaseClient'
 
 function sanitizeInput(input) {
   if (typeof input !== 'string') return ''
@@ -8,23 +8,51 @@ function sanitizeInput(input) {
   }).slice(0, 500)
 }
 
-function readTasks() {
-  try {
-    const value = localStorage.getItem(TASKS_KEY)
-    return value ? JSON.parse(value) : []
-  } catch {
-    return []
+function normalizeTaskDate(taskData) {
+  if (typeof taskData?.date === 'string' && taskData.date.trim()) {
+    return taskData.date.trim()
   }
+
+  if (typeof taskData?.dateKey === 'string' && taskData.dateKey.trim()) {
+    return taskData.dateKey.trim()
+  }
+
+  return ''
 }
 
-function writeTasks(tasks) {
-  localStorage.setItem(TASKS_KEY, JSON.stringify(tasks))
+function formatTimeFromCreatedAt(createdAt, fallbackTime = '--:--') {
+  if (!createdAt) return fallbackTime
+  const parsed = new Date(createdAt)
+  if (Number.isNaN(parsed.getTime())) return fallbackTime
+
+  return parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 export const taskService = {
   async getTasks(userId) {
-    const allTasks = readTasks()
-    const tasks = allTasks.filter((task) => task.userId === userId)
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', userId)
+      .order('task_date', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      return { data: null, error: error.message }
+    }
+
+    const tasks = data.map(task => ({
+      id: task.id,
+      userId: task.user_id,
+      date: task.task_date,
+      dateKey: task.task_date,
+      text: task.text,
+      completed: task.completed,
+      context: task.context ?? 'pessoal',
+      time: task.time ?? formatTimeFromCreatedAt(task.created_at),
+      createdAt: task.created_at
+    }))
+
     return { data: tasks, error: null }
   },
 
@@ -33,29 +61,64 @@ export const taskService = {
       return { data: null, error: 'Texto da tarefa é obrigatório.' }
     }
 
-    const allTasks = readTasks()
-    const task = {
-      id: crypto?.randomUUID?.() ?? String(Date.now()),
-      ...taskData,
-      text: sanitizeInput(taskData.text),
-      createdAt: new Date().toISOString(),
+    const taskDate = normalizeTaskDate(taskData)
+    if (!taskDate) {
+      return { data: null, error: 'Data da tarefa é obrigatória.' }
     }
-    allTasks.push(task)
-    writeTasks(allTasks)
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert([{
+        user_id: taskData.userId,
+        task_date: taskDate,
+        text: sanitizeInput(taskData.text),
+        completed: taskData.completed || false
+      }])
+      .select()
+      .single()
+
+    if (error) {
+      return { data: null, error: error.message }
+    }
+
+    const task = {
+      id: data.id,
+      userId: data.user_id,
+      date: data.task_date,
+      dateKey: data.task_date,
+      text: data.text,
+      completed: data.completed,
+      context: data.context ?? taskData.context ?? 'pessoal',
+      time: data.time ?? taskData.time ?? formatTimeFromCreatedAt(data.created_at),
+      createdAt: data.created_at
+    }
+
     return { data: task, error: null }
   },
 
   async updateStatus(id, completed) {
-    const allTasks = readTasks()
-    const updated = allTasks.map((task) => (task.id === id ? { ...task, completed } : task))
-    writeTasks(updated)
+    const { error } = await supabase
+      .from('tasks')
+      .update({ completed })
+      .eq('id', id)
+
+    if (error) {
+      return { data: null, error: error.message }
+    }
+
     return { data: true, error: null }
   },
 
   async delete(id) {
-    const allTasks = readTasks()
-    const updated = allTasks.filter((task) => task.id !== id)
-    writeTasks(updated)
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      return { data: null, error: error.message }
+    }
+
     return { data: true, error: null }
   },
 }

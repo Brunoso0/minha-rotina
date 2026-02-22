@@ -326,6 +326,34 @@ input {
   color: #64748b;
 }
 
+.planner-password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.planner-password-toggle:hover {
+  opacity: 1;
+}
+
+.theme-light .planner-password-toggle {
+  color: #64748b;
+}
+
+.theme-dark .planner-password-toggle {
+  color: #cbd5e1;
+}
+
 .planner-login-footer {
   margin-top: 20px;
   border-top: 1px solid;
@@ -1212,6 +1240,11 @@ input {
   background: #020617;
 }
 
+.planner-progress-wrap {
+  position: relative;
+  padding-bottom: 18px;
+}
+
 .planner-progress-track {
   height: 12px;
   border-radius: 999px;
@@ -1240,6 +1273,25 @@ input {
   background: #f59e0b;
 }
 
+.planner-progress-label {
+  position: absolute;
+  top: 20px;
+  transform: translateX(-100%);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.theme-light .planner-progress-label {
+  color: #111827;
+}
+
+.theme-dark .planner-progress-label {
+  color: #f9fafb;
+}
+
 @media (max-width: 1024px) {
   .planner-main-grid {
     grid-template-columns: 1fr;
@@ -1253,7 +1305,44 @@ input {
   }
 
   .planner-header-content {
+    position: relative;
+    flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .planner-brand-block {
+    width: 100%;
+    padding-right: 56px;
+  }
+
+  .planner-header-controls {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .planner-icon-button {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+  }
+
+  .planner-context-switch {
+    width: 100%;
+  }
+
+  .planner-context-button {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+  }
+
+  .planner-user-pill {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .planner-day-cell {

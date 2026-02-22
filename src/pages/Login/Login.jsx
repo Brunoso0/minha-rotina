@@ -2,6 +2,8 @@ import { useState } from 'react'
 import {
 	AlertCircle,
 	ArrowRight,
+	Eye,
+	EyeOff,
 	LayoutDashboard,
 	Lock,
 	Mail,
@@ -17,6 +19,8 @@ function LoginPage({ onLogin, onRegister, darkMode, onToggleDarkMode }) {
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
 	const [confirmPassword, setConfirmPassword] = useState('')
+	const [showPassword, setShowPassword] = useState(false)
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 	const [error, setError] = useState('')
 	const [submitting, setSubmitting] = useState(false)
 
@@ -59,7 +63,7 @@ function LoginPage({ onLogin, onRegister, darkMode, onToggleDarkMode }) {
 					<div className="planner-login-badge">
 						{registerMode ? <UserPlus size={40} /> : <LayoutDashboard size={40} />}
 					</div>
-					<h1>{registerMode ? 'CRIAR CONTA' : 'PLANNER PRO'}</h1>
+					<h1>{registerMode ? 'CRIAR CONTA' : 'FLOWROUTINE'}</h1>
 					<p className="planner-muted">
 						{registerMode
 							? 'Crie sua conta para começar.'
@@ -96,7 +100,7 @@ function LoginPage({ onLogin, onRegister, darkMode, onToggleDarkMode }) {
 							<label className="planner-label">E-mail</label>
 							<div className="planner-input-icon-wrap">
 								<Mail className="planner-input-icon" size={18} />
-							<input
+								<input
 									type="email"
 									value={email}
 									onChange={(event) => {
@@ -114,7 +118,7 @@ function LoginPage({ onLogin, onRegister, darkMode, onToggleDarkMode }) {
 							<div className="planner-input-icon-wrap">
 								<Lock className="planner-input-icon" size={18} />
 								<input
-									type="password"
+									type={showPassword ? 'text' : 'password'}
 									value={password}
 									onChange={(event) => {
 										setPassword(event.target.value)
@@ -122,7 +126,15 @@ function LoginPage({ onLogin, onRegister, darkMode, onToggleDarkMode }) {
 									}}
 									placeholder="••••••••"
 									required
+									style={{ paddingRight: '45px' }}
 								/>
+								<button
+									type="button"
+									onClick={() => setShowPassword(!showPassword)}
+									className="planner-password-toggle"
+								>
+									{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+								</button>
 							</div>
 						</div>
 
@@ -132,12 +144,20 @@ function LoginPage({ onLogin, onRegister, darkMode, onToggleDarkMode }) {
 								<div className="planner-input-icon-wrap">
 									<Lock className="planner-input-icon" size={18} />
 									<input
-										type="password"
+										type={showConfirmPassword ? 'text' : 'password'}
 										value={confirmPassword}
 										onChange={(event) => setConfirmPassword(event.target.value)}
 										placeholder="••••••••"
 										required={registerMode}
+										style={{ paddingRight: '45px' }}
 									/>
+									<button
+										type="button"
+										onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+										className="planner-password-toggle"
+									>
+										{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+									</button>
 								</div>
 							</div>
 						)}
@@ -157,12 +177,6 @@ function LoginPage({ onLogin, onRegister, darkMode, onToggleDarkMode }) {
 							)}
 						</button>
 					</form>
-
-					{!registerMode && (
-						<div className="planner-test-data">
-							<p>Dados de acesso: admin@example.com / 123456</p>
-						</div>
-					)}
 
 					<div className="planner-login-footer">
 						<button
