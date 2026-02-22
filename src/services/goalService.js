@@ -96,6 +96,19 @@ export const goalService = {
 	},
 
 	async updateStatus(id, completed) {
+		if (!id) {
+			return { data: null, error: 'ID da meta é obrigatório.' }
+		}
+
+		const { error } = await supabase
+			.from('goals')
+			.update({ completed })
+			.eq('id', id)
+
+		if (error) {
+			return { data: null, error: error.message }
+		}
+
 		return { data: true, error: null }
 	},
 

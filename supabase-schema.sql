@@ -9,6 +9,8 @@ CREATE TABLE tasks (
   task_date DATE NOT NULL,
   text TEXT NOT NULL,
   completed BOOLEAN DEFAULT FALSE,
+  context TEXT DEFAULT 'pessoal' CHECK (context IN ('pessoal', 'profissional')),
+  time TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -19,6 +21,8 @@ CREATE TABLE goals (
   month INTEGER NOT NULL,
   year INTEGER NOT NULL,
   description TEXT NOT NULL,
+  completed BOOLEAN DEFAULT FALSE,
+  context TEXT CHECK (context IN ('pessoal', 'profissional')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -63,5 +67,9 @@ CREATE POLICY "Usuários podem deletar suas próprias metas"
 -- Índices para melhor performance
 CREATE INDEX IF NOT EXISTS tasks_user_id_idx ON tasks(user_id);
 CREATE INDEX IF NOT EXISTS tasks_date_idx ON tasks(task_date);
+CREATE INDEX IF NOT EXISTS tasks_context_idx ON tasks(context);
+CREATE INDEX IF NOT EXISTS tasks_user_date_context_idx ON tasks(user_id, task_date, context);
 CREATE INDEX IF NOT EXISTS goals_user_id_idx ON goals(user_id);
 CREATE INDEX IF NOT EXISTS goals_month_year_idx ON goals(month, year);
+CREATE INDEX IF NOT EXISTS goals_context_idx ON goals(context);
+CREATE INDEX IF NOT EXISTS goals_user_month_year_context_idx ON goals(user_id, month, year, context);

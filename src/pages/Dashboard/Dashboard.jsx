@@ -109,7 +109,14 @@ function DashboardPage({ user, darkMode, onToggleDarkMode, onLogout }) {
   }
 
   const toggleGoal = async (id, currentStatus) => {
-    await goalService.updateStatus(id, !currentStatus)
+    const result = await goalService.updateStatus(id, !currentStatus)
+
+    if (result.error) {
+      toast.error(`Não foi possível atualizar a meta: ${result.error}`)
+      return
+    }
+
+    toast.success(currentStatus ? 'Meta reaberta.' : 'Meta marcada como feita!')
     await loadData()
   }
 
